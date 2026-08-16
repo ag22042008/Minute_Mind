@@ -26,7 +26,7 @@ tqdm>=4.66.0
 numba>=0.59.0
 
 # --- Live Deployment Compatibility & Groq/Gemini LLMs ---
-pyaudioop>=0.3.1
+audioop-lts>=0.2.1
 groq
 langchain-groq
 langchain-google-genai

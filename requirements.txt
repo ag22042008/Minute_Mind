@@ -7,12 +7,7 @@ pydub>=0.25.1
 ffmpeg-python>=0.2.0
 
 # --- Transcription ---
-openai-whisper>=20231117
-torch>=2.2.0
-torchaudio>=2.2.0
-
-# --- Hindi/Hinglish transcription ---
-sarvamai>=0.1.0        # confirm exact package name on PyPI before installing
+# Native transcription moved to Groq API to save cloud RAM!
 
 # --- LLM orchestration & summarization ---
 langchain>=0.2.0
@@ -21,9 +16,8 @@ langchain-mistralai>=0.1.6
 mistralai>=0.4.0
 
 # --- RAG: vector store & embeddings ---
+langchain-chroma
 chromadb>=0.5.0
-sentence-transformers>=2.7.0
-langchain-huggingface>=0.0.3
 
 # --- Utilities ---
 python-dotenv>=1.0.1
@@ -33,5 +27,6 @@ numba>=0.59.0
 
 # --- Live Deployment Compatibility & Groq/Gemini LLMs ---
 pyaudioop>=0.3.1
+groq
 langchain-groq
 langchain-google-genai

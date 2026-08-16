@@ -110,6 +110,9 @@ def download_youtube_audio(url:str)->str:
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "wav",
                 "preferredquality": "192",
+                 "cookiefile": COOKIES_PATH,
+                 "verbose": True,
+                  "quiet": False,
                 
             }
         ],

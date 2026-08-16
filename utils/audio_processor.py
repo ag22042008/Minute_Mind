@@ -102,7 +102,6 @@ def download_youtube_audio(url:str)->str:
      output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
      COOKIES_PATH = None
      ydl_opts = {
-<<<<<<< HEAD
         "format": "bestaudio/best",
         "outtmpl": output_path,
         "postprocessors": [
@@ -120,7 +119,7 @@ def download_youtube_audio(url:str)->str:
     "outtmpl": output_path,
     "js_runtimes": {"node": {}},
     "cookiefile": COOKIES_PATH,         
-    "extractor_args": {"youtube": {"player_client": ["tv", "ios", "web_safari"]}},
+    "extractor_args": {"youtube": {"player_client": ["default", "-tv", "web_safari", "web_embedded"]}},
     "postprocessors": [
         {
             "key": "FFmpegExtractAudio",
@@ -134,7 +133,7 @@ def download_youtube_audio(url:str)->str:
 
     },
     "quiet": True,
-}
+}}
      with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
         filename = ydl.prepare_filename(info)

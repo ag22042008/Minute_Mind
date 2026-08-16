@@ -40,23 +40,23 @@ from groq import Groq
 # Ensure .env is prioritized over system variables.
 load_dotenv(override=True)
 
-# Important: we grab the key safely.
-VALID_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
-
-
-
-try:
-    client = Groq(api_key=VALID_API_KEY) if VALID_API_KEY else None
-except Exception as e:
-   
-    client = None
+def get_groq_client():
+    key = os.environ.get("GROQ_API_KEY", "").strip()
+    if not key:
+        import streamlit as st
+        try:
+            key = st.secrets["GROQ_API_KEY"]
+        except Exception:
+            pass
+    if not key:
+        raise ValueError("Cannot transcribe: GROQ_API_KEY is missing from both environment variables and Streamlit secrets.")
+    return Groq(api_key=key)
 
 def transcribe_chunk(chunk_path: str, translate: bool = False, max_workers: int = None) -> str:
     """
     Uploads an audio file/chunk to Groq API and gets the transcription directly.
     """
-    if not client:
-        raise ValueError("Cannot transcribe: Groq client is not initialized due to a missing valid API key.")
+    client = get_groq_client()
         
     
     

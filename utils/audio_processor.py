@@ -129,7 +129,7 @@ def download_youtube_audio(url:str)->str:
         }
     ],
     "postprocessor_args": {
-        "extractaudio": ["-ar", "16000", "-ac", "1"]
+        "extractaudio":["-ar", "16000", "-ac", "1"]
 
     },
     "quiet": True,

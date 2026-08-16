@@ -31,6 +31,11 @@ from core.transcriber import transcribe_all
 from core.summarise import summarize, generate_title
 from core.extractor import actionable_items, extract_questions, key_decisions
 from core.rag_engine import build_rag_chain, ask_questions
+try:
+    from youtube_transcript_api import YouTubeTranscriptApi
+    _YT_TRANSCRIPT_AVAILABLE = True
+except ImportError:
+    _YT_TRANSCRIPT_AVAILABLE = False
 
 load_dotenv()
 
@@ -402,17 +407,42 @@ def reset_state():
             pass
 
 
-def run_pipeline(source: str) -> bool:
+def _extract_video_id(url: str) -> str:
+    """Pull the video ID out of any YouTube URL format."""
+    import re
+    patterns = [
+        r"(?:v=|youtu\.be/|embed/|shorts/)([a-zA-Z0-9_-]{11})"
+    ]
+    for p in patterns:
+        m = re.search(p, url)
+        if m:
+            return m.group(1)
+    raise ValueError(f"Could not extract video ID from URL: {url}")
+
+
+def _fetch_youtube_transcript(url: str) -> str:
+    """Fetch transcript via YouTube Transcript API — no audio download needed."""
+    video_id = _extract_video_id(url)
+    transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=["en", "en-US", "en-GB", "hi", "auto"])
+    return " ".join(entry["text"] for entry in transcript_list)
+
+
+def run_pipeline(source: str, is_youtube_url: bool = False) -> bool:
     """Runs the full pipeline. Returns True on success, False on failure
     (in which case a simple error message has already been shown)."""
     st.session_state.is_running = True
     status = st.status("Running the signal chain…", expanded=True)
     try:
-        status.write("01 · Capturing audio…")
-        chunks = process_input(source)
-
-        status.write("02 · Transcribing speech…")
-        transcription = transcribe_all(chunks)
+        if is_youtube_url and _YT_TRANSCRIPT_AVAILABLE:
+            # Fast path: fetch captions directly — bypasses yt-dlp 403 entirely
+            status.write("01 · Fetching YouTube transcript (no audio download)…")
+            transcription = _fetch_youtube_transcript(source)
+            status.write("02 · Transcript received ✓")
+        else:
+            status.write("01 · Capturing audio…")
+            chunks = process_input(source)
+            status.write("02 · Transcribing speech…")
+            transcription = transcribe_all(chunks)
 
         status.write("03 · Naming the session…")
         title = generate_title(transcription)
@@ -495,7 +525,8 @@ with st.sidebar:
     if run_clicked and source_value:
         reset_state()  # always start from a clean slate before loading the new source
         st.session_state.last_source_id = source_id
-        run_pipeline(source_value)
+        is_yt = (input_mode == "YouTube URL")
+        run_pipeline(source_value, is_youtube_url=is_yt)
 
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown('<div class="eyebrow">Signal chain</div>', unsafe_allow_html=True)

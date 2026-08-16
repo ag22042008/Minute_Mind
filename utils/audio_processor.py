@@ -115,7 +115,7 @@ def download_youtube_audio(url:str)->str:
         ],
         "postprocessor_args": {
         "extractaudio": ["-ar", "16000", "-ac", "1"]  # force 16kHz mono at the source
-=======
+
     "format": "bestaudio/best",
     "outtmpl": output_path,
     "js_runtimes": {"node": {}},
@@ -131,7 +131,7 @@ def download_youtube_audio(url:str)->str:
     ],
     "postprocessor_args": {
         "extractaudio": ["-ar", "16000", "-ac", "1"]
->>>>>>> fb08f3ff2127ae5d5747112e39f11b83a12571f2
+
     },
     "quiet": True,
 }
@@ -140,6 +140,7 @@ def download_youtube_audio(url:str)->str:
         filename = ydl.prepare_filename(info)
         base, _ = os.path.splitext(filename)
         filename = base + ".wav"
+
      return filename
     #  with yt_dlp.YoutubeDL(ydl_opts) as ydl:
     #     info = ydl.extract_info(url, download=True)

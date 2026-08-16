@@ -98,14 +98,11 @@ DOWNLOAD_DIR='downloades'
 output_path = os.path.join(DOWNLOAD_DIR, "%(id)s.%(ext)s")
 # COOKIES_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "cookies.txt"))
 os.makedirs(DOWNLOAD_DIR,exist_ok=True)
-def download_youtube_audio(url:str)->str:
-     output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
-     COOKIES_PATH = None
-     ydl_opts = {
+def download_youtube_audio(url: str) -> str:
+    output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
+    ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": output_path,
-        "js_runtimes": {"nodejs": {}},
-        "cookiefile": COOKIES_PATH,         
         "extractor_args": {"youtube": {"player_client": ["default", "-tv", "web_safari", "web_embedded"]}},
         "postprocessors": [
             {
@@ -115,20 +112,17 @@ def download_youtube_audio(url:str)->str:
             }
         ],
         "postprocessor_args": {
-            "extractaudio": ["-ar", "16000", "-ac", "1"]  # force 16kHz mono at the source
+            "extractaudio": ["-ar", "16000", "-ac", "1"]
         },
         "quiet": True,
-     }
-     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
         filename = ydl.prepare_filename(info)
         base, _ = os.path.splitext(filename)
         filename = base + ".wav"
-     return filename
-    #  with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-    #     info = ydl.extract_info(url, download=True)
-    #     filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav")
-    #  return filename
+    return filename
+
 
 def convert_to_wav(input_path:str)->str:
     "Convert any other video type mp4 mp3 format to wav format using pydub.and also youtube audio to a refined audio and into a whisper readable format"

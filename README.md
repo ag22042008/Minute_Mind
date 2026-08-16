@@ -49,7 +49,7 @@ graph TD
     G -->|Embeddings| G1[(Vector Database)]
     end
     
-    subgraph Console (app.py)
+    subgraph Console UI
     E1 --> H[Streamlit UI Dashboard]
     F1 --> H
     F2 --> H

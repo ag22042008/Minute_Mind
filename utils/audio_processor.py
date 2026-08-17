@@ -128,9 +128,10 @@ def download_youtube_audio(url: str) -> str:
     cookies_file = get_cookies_path()
     if cookies_file:
         ydl_opts["cookiefile"] = cookies_file
-        # mweb (mobile web) and web_creator use different URL signing than the main
-        # web client, and may handle n-challenge differently. Both support cookies.
-        ydl_opts["extractor_args"]["youtube"]["player_client"] = ["mweb", "web_creator"]
+        # With Deno installed (via deno-bin in requirements.txt), yt-dlp can now solve
+        # the n-challenge that the web client requires. Deno is yt-dlp's preferred
+        # JS runtime and handles YouTube's obfuscated challenge code correctly.
+        ydl_opts["extractor_args"]["youtube"]["player_client"] = ["web"]
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)

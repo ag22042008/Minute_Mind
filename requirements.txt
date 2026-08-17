@@ -2,8 +2,7 @@
 streamlit>=1.35.0
 
 # --- Audio/Video acquisition & processing ---
-# pytubefix: pure-Python YouTube downloader using InnerTube API (no n-challenge/PO token needed)
-pytubefix>=8.0.0
+yt-dlp>=2025.7.7
 pydub>=0.25.1
 ffmpeg-python>=0.2.0
 

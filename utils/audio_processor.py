@@ -61,9 +61,12 @@
 # .set_frame_rate(16000) → resamples the audio so it has a sample rate of 16,000 Hz (16kHz), meaning 16,000 audio samples per second, regardless of what the original rate was (commonly 44100 Hz or 48000 Hz for normal audio) for scaling it acc to whisper scale.
 
 
-import yt_dlp
+# pyrefly: ignore [missing-import]
+from pytubefix import YouTube
+from pytubefix.exceptions import PytubeError
 # pyrefly: ignore [missing-import]
 from pydub import AudioSegment
+import ffmpeg
 import os
 import tempfile
 import streamlit as st
@@ -90,61 +93,37 @@ def get_cookies_path():
 
 
 def download_youtube_audio(url: str) -> str:
-    output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
+    """Download audio from YouTube using pytubefix (InnerTube API, no n-challenge needed)."""
 
-    ydl_opts = {
-        # Pull best available audio stream, fall back to best overall
-        "format": "bestaudio/best",
+    yt = YouTube(url)
 
-        # Output file naming template — uses video title
-        "outtmpl": output_path,
+    # Select highest-quality audio-only stream;
+    # fall back to any available stream if no audio-only exists.
+    audio_stream = (
+        yt.streams.filter(only_audio=True).order_by("abr").last()
+        or yt.streams.first()
+    )
+    if not audio_stream:
+        raise RuntimeError("No downloadable audio stream found for this YouTube video.")
 
-        # Bypass 403 Forbidden errors triggered by Cloud IPs (Streamlit).
-        # We prioritize iOS/Safari which historically don't require the strict Node.js PO token challenge.
-        "extractor_args": {
-            "youtube": {
-                "player_client": ["ios", "web_safari", "android"],
-            }
-        },
+    # Download the raw stream (m4a / webm / mp4)
+    raw_path = audio_stream.download(output_path=DOWNLOAD_DIR)
 
-        # After downloading, run FFmpeg to convert to WAV
-        "postprocessors": [
-            {
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "wav",
-                "preferredquality": "192",
-            }
-        ],
+    # Convert to 16kHz mono WAV — same spec as before, optimal for Whisper
+    wav_path = os.path.splitext(raw_path)[0] + ".wav"
+    (
+        ffmpeg
+        .input(raw_path)
+        .output(wav_path, ar=16000, ac=1, format="wav")
+        .overwrite_output()
+        .run(quiet=True)
+    )
 
-        # Force 16kHz mono at the FFmpeg conversion stage (Whisper-optimal)
-        "postprocessor_args": {
-            "extractaudio": ["-ar", "16000", "-ac", "1"]
-        },
+    # Remove the original downloaded container (m4a/webm) — only keep the WAV
+    if raw_path != wav_path and os.path.exists(raw_path):
+        os.remove(raw_path)
 
-        "quiet": True,
-    }
-
-    # Inject the temporary cookies file into yt-dlp if it exists in Streamlit secrets
-    cookies_file = get_cookies_path()
-    if cookies_file:
-        ydl_opts["cookiefile"] = cookies_file
-        # With Deno installed (via deno-bin in requirements.txt), yt-dlp can now solve
-        # the n-challenge that the web client requires. Deno is yt-dlp's preferred
-        # JS runtime and handles YouTube's obfuscated challenge code correctly.
-        ydl_opts["extractor_args"]["youtube"]["player_client"] = ["web"]
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info)
-        # Swap the original container extension for .wav
-        base, _ = os.path.splitext(filename)
-        filename = base + ".wav"
-
-    # For security, delete the temporary cookies file off the server disk immediately
-    if cookies_file and os.path.exists(cookies_file):
-        os.remove(cookies_file)
-
-    return filename
+    return wav_path
 
 
 def convert_to_wav(input_path: str) -> str:

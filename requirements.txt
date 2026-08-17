@@ -2,10 +2,9 @@
 streamlit>=1.35.0
 
 # --- Audio/Video acquisition & processing ---
-yt-dlp
+yt-dlp>=2025.7.7
 pydub>=0.25.1
 ffmpeg-python>=0.2.0
-youtube-transcript-api>=0.6.0
 
 # --- Transcription ---
 # Native transcription moved to Groq API to save cloud RAM!

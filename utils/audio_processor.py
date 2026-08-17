@@ -128,9 +128,11 @@ def download_youtube_audio(url: str) -> str:
     cookies_file = get_cookies_path()
     if cookies_file:
         ydl_opts["cookiefile"] = cookies_file
-        # ios/android clients do NOT support cookies — they get skipped and leave no formats.
-        # Only the web client accepts cookies, so switch to it when cookies are present.
-        ydl_opts["extractor_args"]["youtube"]["player_client"] = ["web"]
+        # The 'web' client requires n-challenge JavaScript solving for ALL formats.
+        # On cloud IPs with no working JS runtime, 'web' leaves zero audio formats.
+        # 'tv_embedded' accepts cookies BUT does NOT use the n-challenge parameter,
+        # so audio formats remain available without a working JavaScript runtime.
+        ydl_opts["extractor_args"]["youtube"]["player_client"] = ["tv_embedded", "web_embedded"]
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)

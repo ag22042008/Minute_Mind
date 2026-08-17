@@ -128,6 +128,9 @@ def download_youtube_audio(url: str) -> str:
     cookies_file = get_cookies_path()
     if cookies_file:
         ydl_opts["cookiefile"] = cookies_file
+        # ios/android clients do NOT support cookies — they get skipped and leave no formats.
+        # Only the web client accepts cookies, so switch to it when cookies are present.
+        ydl_opts["extractor_args"]["youtube"]["player_client"] = ["web"]
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)

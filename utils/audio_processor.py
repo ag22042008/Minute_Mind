@@ -80,11 +80,11 @@ def download_youtube_audio(url: str) -> str:
         # Output file naming template — uses video title
         "outtmpl": output_path,
 
-        # Use web + android clients. These receive unencrypted audio streams
-        # and avoid the fake DRM errors caused by the TV client.
+        # Bypass 403 Forbidden errors triggered by Cloud IPs (Streamlit).
+        # We prioritize iOS/Safari which historically don't require the strict Node.js PO token challenge.
         "extractor_args": {
             "youtube": {
-                "player_client": ["web", "android"],
+                "player_client": ["ios", "web_safari", "android"],
             }
         },
 

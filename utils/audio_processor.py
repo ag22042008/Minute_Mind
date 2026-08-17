@@ -65,9 +65,25 @@ import yt_dlp
 # pyrefly: ignore [missing-import]
 from pydub import AudioSegment
 import os
+import tempfile
+import streamlit as st
 
 DOWNLOAD_DIR = 'downloades'
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+def get_cookies_path():
+    """Safely fetch cookies from Streamlit Secrets into a temporary file."""
+    try:
+        cookies_content = st.secrets.get("www.youtube.com_cookies.txt", None)
+        if cookies_content:
+            # Write cookies to a temporary file that yt-dlp can read
+            fd, path = tempfile.mkstemp(suffix=".txt", text=True)
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                f.write(cookies_content)
+            return path
+    except Exception:
+        pass
+    return None
 
 
 def download_youtube_audio(url: str) -> str:
@@ -105,12 +121,21 @@ def download_youtube_audio(url: str) -> str:
         "quiet": True,
     }
 
+    # Inject the temporary cookies file into yt-dlp if it exists in Streamlit secrets
+    cookies_file = get_cookies_path()
+    if cookies_file:
+        ydl_opts["cookiefile"] = cookies_file
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
         filename = ydl.prepare_filename(info)
         # Swap the original container extension for .wav
         base, _ = os.path.splitext(filename)
         filename = base + ".wav"
+
+    # For security, delete the temporary cookies file off the server disk immediately
+    if cookies_file and os.path.exists(cookies_file):
+        os.remove(cookies_file)
 
     return filename
 

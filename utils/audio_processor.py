@@ -76,13 +76,16 @@ def get_cookies_path():
     try:
         cookies_content = st.secrets.get("www.youtube.com_cookies.txt", None)
         if cookies_content:
-            # Write cookies to a temporary file that yt-dlp can read
+            print(f"✅ Found YouTube cookies in Streamlit Secrets! Length: {len(cookies_content)} chars")
             fd, path = tempfile.mkstemp(suffix=".txt", text=True)
             with os.fdopen(fd, 'w', encoding='utf-8') as f:
                 f.write(cookies_content)
+            print(f"✅ Temporary cookie file created at: {path}")
             return path
-    except Exception:
-        pass
+        else:
+            print("⚠️ No cookies found in Streamlit Secrets under key 'www.youtube.com_cookies.txt'")
+    except Exception as e:
+        print(f"⚠️ Error reading Streamlit Secrets: {e}")
     return None
 
 

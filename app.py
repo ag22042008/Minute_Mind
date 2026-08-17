@@ -448,7 +448,16 @@ def run_pipeline(source: str) -> bool:
     except Exception as e:
         status.update(label="Pipeline failed", state="error", expanded=False)
         st.session_state.processed = False
-        st.error(f"Something went wrong while processing this source: {e}")
+        err = str(e)
+        # Give a clear, actionable message for YouTube IP-blocking errors
+        if any(kw in err for kw in ["403", "Forbidden", "format is not available", "PO Token", "n challenge", "page needs to be reloaded"]):
+            st.error(
+                "⚠️ YouTube blocked this request from the cloud server IP.\n\n"
+                "**Fix:** Download the video/audio locally first (use [yt-dlp](https://github.com/yt-dlp/yt-dlp) "
+                "or any YouTube downloader), then switch to **Upload file** in the sidebar and upload the file directly."
+            )
+        else:
+            st.error(f"Something went wrong while processing this source: {e}")
         return False
         
     finally:
@@ -496,6 +505,18 @@ with st.sidebar:
         reset_state()  # always start from a clean slate before loading the new source
         st.session_state.last_source_id = source_id
         run_pipeline(source_value)
+
+    # Sidebar note about YouTube URL limitations on cloud deployments
+    if input_mode == "YouTube URL":
+        st.markdown("""
+<div style="background:rgba(255,180,84,0.08);border:1px solid rgba(255,180,84,0.25);
+            border-radius:8px;padding:0.8rem 1rem;margin-top:0.8rem;font-size:0.75rem;
+            color:var(--text-muted);line-height:1.6;">
+<strong style="color:var(--accent-2);">ℹ️ YouTube on Cloud</strong><br/>
+YouTube blocks direct audio downloads from cloud server IPs. If a URL fails, download the audio locally using 
+<a href="https://github.com/yt-dlp/yt-dlp" target="_blank" style="color:var(--accent);">yt-dlp</a> 
+or any downloader, then use <strong>Upload file</strong> instead.
+</div>""", unsafe_allow_html=True)
 
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown('<div class="eyebrow">Signal chain</div>', unsafe_allow_html=True)

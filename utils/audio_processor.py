@@ -128,11 +128,12 @@ def download_youtube_audio(url: str) -> str:
     cookies_file = get_cookies_path()
     if cookies_file:
         ydl_opts["cookiefile"] = cookies_file
-        # The 'web' client requires n-challenge JavaScript solving for ALL formats.
-        # On cloud IPs with no working JS runtime, 'web' leaves zero audio formats.
-        # 'tv_embedded' accepts cookies BUT does NOT use the n-challenge parameter,
-        # so audio formats remain available without a working JavaScript runtime.
-        ydl_opts["extractor_args"]["youtube"]["player_client"] = ["tv_embedded", "web_embedded"]
+        # n-challenge requires an EJS solver script that can't run on Streamlit Cloud.
+        # player_skip=["webpage","js"] tells yt-dlp to NOT execute any player JavaScript,
+        # completely removing the n-challenge requirement. With valid cookies providing
+        # a real authenticated session, the raw API URLs remain accessible.
+        ydl_opts["extractor_args"]["youtube"]["player_client"] = ["web"]
+        ydl_opts["extractor_args"]["youtube"]["player_skip"] = ["webpage", "js"]
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)

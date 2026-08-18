@@ -3,21 +3,30 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_groq import ChatGroq
 from langchain_mistralai import ChatMistralAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.runnables import RunnableLambda,RunnablePassthrough
 from dotenv import load_dotenv
 load_dotenv()
 import os
 import time
-def getllm():
-    return ChatMistralAI(model="mistral-medium-latest", temperature=0.2).with_retry(
+
+def getllm_mistral():
+    return ChatMistralAI(model="mistral-large-latest", temperature=0.2).with_retry(
         stop_after_attempt=3, wait_exponential_jitter=True
     )
-def getllm2():
-    return ChatGroq(model="openai/gpt-oss-20b", temperature=0.2).with_retry(
-        stop_after_attempt=3,
-        wait_exponential_jitter=True,
+
+def getllm_groq():
+    return ChatGroq(model="llama-3.1-8b-instant", temperature=0.2)
+
+def getllm_gemini():
+    return ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.2).with_retry(
+        stop_after_attempt=3, wait_exponential_jitter=True
     )
+
+def get_resilient_llm():
+    # Primary: Gemini (higher limits), Fallbacks: Mistral, then Groq
+    return getllm_gemini().with_fallbacks([getllm_mistral(), getllm_groq()])
 
 
 def split_transcript(transcript:str)->list:
@@ -28,7 +37,7 @@ def split_transcript(transcript:str)->list:
     return splitter.split_text(transcript)
 
 def summarize(transcript:str)->str:
-    llm=getllm2()
+    llm=get_resilient_llm()
     map_prompt=ChatPromptTemplate.from_messages(
         [
             ("system","Summarize this portion of a meeting transcript concisely and only in english"),
@@ -65,7 +74,7 @@ def summarize(transcript:str)->str:
     return combined_chain.invoke({"text": combined_chunks[0]})
 
 def generate_title(transcript:str)->str:
-    llm=getllm2()
+    llm=get_resilient_llm()
     title_prompt=ChatPromptTemplate.from_messages([
         ("system","Based on the meeting transcript, generate a short professional meeting title "
                 "(max 8 words). Only return the title, nothing else."),

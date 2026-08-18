@@ -185,9 +185,10 @@ def convert_to_wav(input_path: str) -> str:
     return output_path
 
 
-def chunk_audio(wav_path: str, chunk_minutes: int = 12) -> list:
-    """Split a WAV file into chunks using ffmpeg segment muxer.
-    Writes each chunk directly to disk — never loads the whole file into RAM."""
+def chunk_audio(wav_path: str, chunk_minutes: int = 8) -> list:
+    """Split a WAV into properly-encoded chunks using ffmpeg segment muxer.
+    Uses -c:a pcm_s16le (NOT -c copy) so every chunk gets a valid WAV header.
+    -c copy splits at raw bytes, producing headerless files that Groq rejects with 500."""
     chunk_secs = chunk_minutes * 60
     base = os.path.splitext(wav_path)[0]
     pattern = f"{base}_chunk_%03d.wav"
@@ -198,7 +199,9 @@ def chunk_audio(wav_path: str, chunk_minutes: int = 12) -> list:
             "-i", wav_path,
             "-f", "segment",
             "-segment_time", str(chunk_secs),
-            "-c", "copy",
+            "-c:a", "pcm_s16le",   # re-encode → each segment gets a proper WAV header
+            "-ar", "16000",
+            "-ac", "1",
             pattern,
         ],
         capture_output=True,

@@ -52,36 +52,46 @@ def get_groq_client():
         raise ValueError("Cannot transcribe: GROQ_API_KEY is missing from both environment variables and Streamlit secrets.")
     return Groq(api_key=key)
 
-def transcribe_chunk(chunk_path: str, translate: bool = False, max_workers: int = None) -> str:
+def transcribe_chunk(chunk_path: str, translate: bool = False) -> str:
     """
     Uploads an audio file/chunk to Groq API and gets the transcription directly.
+    Retries up to 3 times on transient 500 errors with exponential backoff.
     """
+    # Groq hard limit is 25 MB — reject clearly oversized chunks early
+    size_mb = os.path.getsize(chunk_path) / (1024 * 1024)
+    if size_mb > 24:
+        raise ValueError(
+            f"Chunk {os.path.basename(chunk_path)} is {size_mb:.1f} MB — "
+            "exceeds Groq's 25 MB limit. Reduce chunk_minutes further."
+        )
+
     client = get_groq_client()
-        
-    
-    
-    with open(chunk_path, "rb") as file:
-        file_tuple = (os.path.basename(chunk_path), file.read())
-        
-        if translate:
-            
-            response = client.audio.translations.create(
-                file=file_tuple,
-                model="whisper-large-v3",
-                response_format="text"
-            )
-        else:
-           
-            response = client.audio.transcriptions.create(
-                file=file_tuple,
-                model="whisper-large-v3",
-                response_format="text"
-            )
-    
-    # response is directly the string text when response_format="text"
-    if isinstance(response, str):
-        return response.strip()
-    return response.text.strip()
+    last_err = None
+    for attempt in range(3):
+        try:
+            with open(chunk_path, "rb") as file:
+                file_tuple = (os.path.basename(chunk_path), file.read())
+                if translate:
+                    response = client.audio.translations.create(
+                        file=file_tuple,
+                        model="whisper-large-v3",
+                        response_format="text",
+                    )
+                else:
+                    response = client.audio.transcriptions.create(
+                        file=file_tuple,
+                        model="whisper-large-v3",
+                        response_format="text",
+                    )
+            if isinstance(response, str):
+                return response.strip()
+            return response.text.strip()
+        except Exception as e:
+            last_err = e
+            wait = 2 ** attempt   # 1s, 2s, 4s
+            logging.warning(f"Groq transcription attempt {attempt+1} failed: {e}. Retrying in {wait}s…")
+            time.sleep(wait)
+    raise RuntimeError(f"Groq transcription failed after 3 attempts: {last_err}")
     
 def transcribe_all(chunks: list, translate: bool = False) -> str:
     """

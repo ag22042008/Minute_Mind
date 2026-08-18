@@ -222,7 +222,6 @@ def process_input(source: str) -> list:
     # Clean accidental brackets, quotes, or spaces from copy-pasting
     source = source.strip().strip('[]"\', ')
 
-    # Trigger function to activate all functions in one go
     if source.startswith("http://") or source.startswith("https://"):
         print("Detected YouTube URL. Downloading audio...")
         wav_path = download_youtube_audio(source)
@@ -231,6 +230,8 @@ def process_input(source: str) -> list:
         wav_path = convert_to_wav(source)
 
     print("Chunking audio...")
-    chunks = chunk_audio(wav_path)
+    # 8-minute chunks: 8 min @ 16kHz mono WAV ≈ 15MB, safely under Groq's 25MB limit.
+    # 12-min chunks could exceed 25MB for high-quality recordings.
+    chunks = chunk_audio(wav_path, chunk_minutes=8)
     print(f"Audio ready — {len(chunks)} chunk(s) created.")
     return chunks

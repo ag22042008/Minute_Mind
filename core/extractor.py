@@ -60,7 +60,7 @@ def getllm2():
 
 def getllm3():
     return ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash-latest",
+        model="gemini-2.5-flash",
         temperature=0.2,
         rate_limiter=gemini_rate_limiter,
     ).with_retry(stop_after_attempt=3, wait_exponential_jitter=True)

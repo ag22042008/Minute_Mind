@@ -70,17 +70,16 @@ def transcribe_chunk(chunk_path: str, translate: bool = False) -> str:
     for attempt in range(3):
         try:
             with open(chunk_path, "rb") as file:
-                file_tuple = (os.path.basename(chunk_path), file.read(), "audio/mpeg")
                 if translate:
                     response = client.audio.translations.create(
-                        file=file_tuple,
-                        model="whisper-large-v3",
+                        file=file,
+                        model="whisper-large-v3-turbo",
                         response_format="text",
                     )
                 else:
                     response = client.audio.transcriptions.create(
-                        file=file_tuple,
-                        model="whisper-large-v3",
+                        file=file,
+                        model="whisper-large-v3-turbo",
                         response_format="text",
                     )
             if isinstance(response, str):

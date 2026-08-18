@@ -20,8 +20,8 @@ def getllm2():
 
 def split_transcript(transcript:str)->list:
     splitter=RecursiveCharacterTextSplitter(
-        chunk_size=10000,
-        chunk_overlap=890,
+        chunk_size=100000,
+        chunk_overlap=8900,
     )
     return splitter.split_text(transcript)
 

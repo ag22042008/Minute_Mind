@@ -47,11 +47,8 @@ def actionable_items(transcript:str)->str:
         "Format as a numbered list. If none found say 'No action items found.'"
     )
     actionable_items=""
-    import time
-    for idx, chunk in enumerate(chunks):
+    for chunk in chunks:
         actionable_items+=re_chain.invoke({"text":chunk})
-        if idx < len(chunks) - 1:
-            time.sleep(10)
     return actionable_items
 
 
@@ -66,11 +63,8 @@ def key_decisions(transcript:str)->str:
         "If none found say 'No key decisions found.'"
     )
     key_decisions=""
-    import time
-    for idx, chunk in enumerate(chunks):
+    for chunk in chunks:
         key_decisions+=chain_key.invoke({"text":chunk})
-        if idx < len(chunks) - 1:
-            time.sleep(10)
     return key_decisions
 
 def extract_questions(transcript: str) -> str:
@@ -80,11 +74,8 @@ def extract_questions(transcript: str) -> str:
         "or topics needing follow-up. Format as a numbered list. "
         "If none found say 'No open questions found.'")
      unresolved_questions=""
-     import time
-     for idx, chunk in enumerate(chunks):
+     for chunk in chunks:
          unresolved_questions+=chain_extract_unresolved_questions.invoke({"text":chunk})
-         if idx < len(chunks) - 1:
-             time.sleep(10)
      return unresolved_questions
 
      

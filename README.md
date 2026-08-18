@@ -12,7 +12,8 @@ Designed for unparalleled speed and context awareness, it leverages modern LLMs 
 ---
 
 ## ⚡ Features Layer
-- **Seamless Ingestion:** Drop a local file (`.mp3`, `.mp4`) or just paste a YouTube link.
+- **Seamless Ingestion:** Drop a local video or audio file (`.mp3`, `.mp4`, `.wav`, etc.).
+  - *Note on YouTube Videos:* Due to YouTube's strict cloud server IP blocking, direct URL pasting is disabled in the cloud version. Simply download the video locally using `yt-dlp` and upload the file instead!
 - **Deep Transcription:** Splits long media and transcribes via Whisper models.
 - **AI-Powered Digest:**
   - Automated professional session titles.
@@ -29,7 +30,7 @@ Designed for unparalleled speed and context awareness, it leverages modern LLMs 
 
 ```mermaid
 graph TD
-    A[User Input: YouTube URL or Audio File] --> B[utils/audio_processor.py]
+    A[User Input: Audio/Video File] --> B[utils/audio_processor.py]
     
     subgraph Signal Chain
     B -->|Chunks Audio| C[core/transcriber.py]
@@ -74,7 +75,7 @@ sequenceDiagram
     participant LLM as AI Models
     participant R as RAG Engine
 
-    U->>A: Uploads Video / URL
+    U->>A: Uploads Video / Audio File
     A->>AP: Process Media
     AP-->>A: Sliced Audio Chunks
     A->>T: Transcribe Audio

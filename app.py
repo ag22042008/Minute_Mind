@@ -473,30 +473,36 @@ with st.sidebar:
     st.markdown('<div class="brand-sub">Meeting intelligence console</div>', unsafe_allow_html=True)
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    input_mode = st.radio("Source", ["YouTube URL", "Upload file"], horizontal=True, label_visibility="collapsed")
+    # YouTube Cloud IP blocking makes direct URL downloads too unreliable on cloud hosts,
+    # so we exclusively use the file upload method and instruct the user.
+    st.markdown("""
+<div style="background:rgba(255,180,84,0.08);border:1px solid rgba(255,180,84,0.25);
+            border-radius:8px;padding:0.8rem 1rem;margin-bottom:1.2rem;font-size:0.75rem;
+            color:var(--text-muted);line-height:1.6;">
+<strong style="color:var(--accent-2);">ℹ️ How to transcribe YouTube videos</strong><br/>
+Because of YouTube's latest anti-bot protections, direct URL downloads are blocked on cloud servers. 
+Please download your video/audio locally using 
+<a href="https://github.com/yt-dlp/yt-dlp" target="_blank" style="color:var(--accent);">yt-dlp</a> 
+or any YouTube downloader, then upload it below.
+</div>""", unsafe_allow_html=True)
 
     source_value = None
     source_id = None
-    if input_mode == "YouTube URL":
-        url = st.text_input("YouTube URL", placeholder="https://youtube.com/watch?v=...", label_visibility="collapsed")
-        if url:
-            source_value = url
-            source_id = f"url:{url}"
-    else:
-        uploaded = st.file_uploader(
-            "Upload", type=["mp3", "wav", "m4a", "mp4", "mov", "mkv"], label_visibility="collapsed"
-        )
-        if uploaded is not None:
-            source_id = f"file:{uploaded.name}:{uploaded.size}"
-            # a different file was picked than the one currently loaded —
-            # clear old results immediately so they don't linger on screen
-            if st.session_state.get("last_source_id") != source_id:
-                reset_state()
-            tmp_dir = tempfile.mkdtemp()
-            tmp_path = os.path.join(tmp_dir, uploaded.name)
-            with open(tmp_path, "wb") as f:
-                f.write(uploaded.getbuffer())
-            source_value = tmp_path
+    
+    uploaded = st.file_uploader(
+        "Upload", type=["mp3", "wav", "m4a", "mp4", "mov", "mkv"], label_visibility="collapsed"
+    )
+    if uploaded is not None:
+        source_id = f"file:{uploaded.name}:{uploaded.size}"
+        # a different file was picked than the one currently loaded —
+        # clear old results immediately so they don't linger on screen
+        if st.session_state.get("last_source_id") != source_id:
+            reset_state()
+        tmp_dir = tempfile.mkdtemp()
+        tmp_path = os.path.join(tmp_dir, uploaded.name)
+        with open(tmp_path, "wb") as f:
+            f.write(uploaded.getbuffer())
+        source_value = tmp_path
 
     run_clicked = st.button("▸ Analyze", use_container_width=True, disabled=not source_value)
     st.button("Reset console", use_container_width=True, type="secondary", on_click=reset_state)
@@ -505,18 +511,6 @@ with st.sidebar:
         reset_state()  # always start from a clean slate before loading the new source
         st.session_state.last_source_id = source_id
         run_pipeline(source_value)
-
-    # Sidebar note about YouTube URL limitations on cloud deployments
-    if input_mode == "YouTube URL":
-        st.markdown("""
-<div style="background:rgba(255,180,84,0.08);border:1px solid rgba(255,180,84,0.25);
-            border-radius:8px;padding:0.8rem 1rem;margin-top:0.8rem;font-size:0.75rem;
-            color:var(--text-muted);line-height:1.6;">
-<strong style="color:var(--accent-2);">ℹ️ YouTube on Cloud</strong><br/>
-YouTube blocks direct audio downloads from cloud server IPs. If a URL fails, download the audio locally using 
-<a href="https://github.com/yt-dlp/yt-dlp" target="_blank" style="color:var(--accent);">yt-dlp</a> 
-or any downloader, then use <strong>Upload file</strong> instead.
-</div>""", unsafe_allow_html=True)
 
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown('<div class="eyebrow">Signal chain</div>', unsafe_allow_html=True)
@@ -552,7 +546,7 @@ if not st.session_state.processed:
         """<div class="empty-panel">
 <div class="brand-mark" style="font-size:1.3rem;margin-bottom:0.4rem;">Nothing to play back yet</div>
 <div style="color:var(--text-muted);font-size:0.85rem;max-width:420px;margin:0 auto;line-height:1.7;">
-Drop a YouTube link or a recording into the console on the left,
+Drop a video or audio recording into the console on the left,
 then hit <strong>Analyze</strong> — MinuteMind will find the signal in the noise.
 </div>
 <div style="margin-top:1.6rem;">

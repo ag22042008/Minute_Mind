@@ -20,7 +20,7 @@ def getllm_groq():
     return ChatGroq(model="llama-3.1-8b-instant", temperature=0.2)
 
 def getllm_gemini():
-    return ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.2).with_retry(
+    return ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0.2).with_retry(
         stop_after_attempt=3, wait_exponential_jitter=True
     )
 

@@ -78,7 +78,7 @@ _EXTRA_PATHS = [
     "/bin",
     "/usr/local/ffmpeg/bin",
 ]
-_ENV_PATH = ":".join(_EXTRA_PATHS + [os.environ.get("PATH", "")])
+_ENV_PATH = os.pathsep.join(_EXTRA_PATHS + [os.environ.get("PATH", "")])
 _SUBPROCESS_ENV = {**os.environ, "PATH": _ENV_PATH}
 
 # Let pydub use the plain command name — the subprocess env above handles finding it.

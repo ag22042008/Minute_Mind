@@ -185,23 +185,24 @@ def convert_to_wav(input_path: str) -> str:
     return output_path
 
 
-def chunk_audio(wav_path: str, chunk_minutes: int = 8) -> list:
-    """Split a WAV into properly-encoded chunks using ffmpeg segment muxer.
-    Uses -c:a pcm_s16le (NOT -c copy) so every chunk gets a valid WAV header.
-    -c copy splits at raw bytes, producing headerless files that Groq rejects with 500."""
+def chunk_audio(input_path: str, chunk_minutes: int = 10) -> list:
+    """Split the audio into MP3 chunks using ffmpeg segment muxer.
+    MP3 is heavily compressed, ensuring chunks are incredibly small (≈5MB for 10m)
+    and perfectly formatted, entirely avoiding Groq's 25MB limit and 500 header errors."""
     chunk_secs = chunk_minutes * 60
-    base = os.path.splitext(wav_path)[0]
-    pattern = f"{base}_chunk_%03d.wav"
+    base = os.path.splitext(input_path)[0]
+    pattern = f"{base}_chunk_%03d.mp3"
 
     result = subprocess.run(
         [
             "ffmpeg", "-y",
-            "-i", wav_path,
+            "-i", input_path,
             "-f", "segment",
             "-segment_time", str(chunk_secs),
-            "-c:a", "pcm_s16le",   # re-encode → each segment gets a proper WAV header
-            "-ar", "16000",
-            "-ac", "1",
+            "-c:a", "libmp3lame",   # Encode to robust MP3
+            "-b:a", "64k",          # 64kbps is plenty for clear speech transcription
+            "-ar", "16000",         # 16kHz sample rate optimal for Whisper
+            "-ac", "1",             # mono
             pattern,
         ],
         capture_output=True,
@@ -211,12 +212,12 @@ def chunk_audio(wav_path: str, chunk_minutes: int = 8) -> list:
     if result.returncode != 0:
         raise RuntimeError(f"ffmpeg chunking failed: {result.stderr[-500:]}")
 
-    chunk_dir = os.path.dirname(wav_path) or "."
+    chunk_dir = os.path.dirname(input_path) or "."
     base_name = os.path.basename(base)
     chunks = sorted(
         os.path.join(chunk_dir, fn)
         for fn in os.listdir(chunk_dir)
-        if fn.startswith(base_name + "_chunk_") and fn.endswith(".wav")
+        if fn.startswith(base_name + "_chunk_") and fn.endswith(".mp3")
     )
     return chunks
 

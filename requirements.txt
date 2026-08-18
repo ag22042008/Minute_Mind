@@ -2,7 +2,7 @@
 streamlit>=1.35.0
 
 # --- Audio/Video acquisition & processing ---
-yt-dlp>=2025.7.7
+yt-dlp
 pydub>=0.25.1
 ffmpeg-python>=0.2.0
 

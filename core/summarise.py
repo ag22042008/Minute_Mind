@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import os 
 def getllm():
-    return ChatGroq(model="mixtral-8x7b-32768", temperature=0.2).with_retry(
+    return ChatGroq(model="openai/gpt-oss-20b", temperature=0.2).with_retry(
         stop_after_attempt=3, wait_exponential_jitter=True
     )
 def getllm2():

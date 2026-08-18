@@ -34,7 +34,12 @@ def summarize(transcript:str)->str:
     )
     map_chain=map_prompt|llm|StrOutputParser()# summarize each chunk section of a video
     chunks=split_transcript(transcript) 
-    chunk_summaries=[map_chain.invoke({"text":chunk})for chunk in chunks]
+    import time
+    chunk_summaries = []
+    for idx, chunk in enumerate(chunks):
+        chunk_summaries.append(map_chain.invoke({"text": chunk}))
+        if idx < len(chunks) - 1:
+            time.sleep(20) # Respect Groq 8000 TPM limit
     combined="\n\n".join(chunk_summaries)
     # summaries may overlapp so we will sumaarise whole finally
     combined_prompt=ChatPromptTemplate.from_messages([
@@ -47,7 +52,11 @@ def summarize(transcript:str)->str:
     combined_chunks = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200).split_text(combined)
     
     while len(combined_chunks) > 1:
-        reduced_summaries = [combined_chain.invoke({"text": chunk}) for chunk in combined_chunks]
+        reduced_summaries = []
+        for idx, chunk in enumerate(combined_chunks):
+            reduced_summaries.append(combined_chain.invoke({"text": chunk}))
+            if idx < len(combined_chunks) - 1:
+                time.sleep(20)
         new_combined = "\n\n".join(reduced_summaries)
         combined_chunks = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200).split_text(new_combined)
         

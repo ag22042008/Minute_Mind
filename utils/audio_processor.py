@@ -185,7 +185,7 @@ def convert_to_wav(input_path: str) -> str:
     return output_path
 
 
-def chunk_audio(input_path: str, chunk_minutes: int = 10) -> list:
+def chunk_audio(input_path: str, chunk_minutes: int = 4) -> list:
     """Split the audio into MP3 chunks using discrete ffmpeg seeks (-ss and -t).
     This fixes the major bug where ffmpeg's '-f segment' muxer omits headers on
     later chunks, causing Groq APIs to throw 500 errors due to unreadable files."""

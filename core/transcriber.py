@@ -70,7 +70,7 @@ def transcribe_chunk(chunk_path: str, translate: bool = False) -> str:
     for attempt in range(3):
         try:
             with open(chunk_path, "rb") as file:
-                file_tuple = (os.path.basename(chunk_path), file.read())
+                file_tuple = (os.path.basename(chunk_path), file.read(), "audio/mpeg")
                 if translate:
                     response = client.audio.translations.create(
                         file=file_tuple,

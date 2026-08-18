@@ -10,6 +10,7 @@ from langchain_core.runnables import RunnablePassthrough,RunnableLambda
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
+import time
 
 def getllm():
     return ChatGroq(model="openai/gpt-oss-20b", temperature=0.2).with_retry(
@@ -46,10 +47,11 @@ def actionable_items(transcript:str)->str:
         "- Deadline (if mentioned, else write 'Not specified')\n\n"
         "Format as a numbered list. If none found say 'No action items found.'"
     )
-    actionable_items=""
+    actionable_items_result=""
     for chunk in chunks:
-        actionable_items+=re_chain.invoke({"text":chunk})
-    return actionable_items
+        actionable_items_result+=re_chain.invoke({"text":chunk})
+        time.sleep(4)
+    return actionable_items_result
 
 
 
@@ -62,10 +64,11 @@ def key_decisions(transcript:str)->str:
         "extract all key decisions made. Format as a numbered list. "
         "If none found say 'No key decisions found.'"
     )
-    key_decisions=""
+    key_decisions_result=""
     for chunk in chunks:
-        key_decisions+=chain_key.invoke({"text":chunk})
-    return key_decisions
+        key_decisions_result+=chain_key.invoke({"text":chunk})
+        time.sleep(4)
+    return key_decisions_result
 
 def extract_questions(transcript: str) -> str:
      splitter=splitter_text()
@@ -73,10 +76,11 @@ def extract_questions(transcript: str) -> str:
      chain_extract_unresolved_questions = chain("From the meeting transcript, extract all unresolved questions "
         "or topics needing follow-up. Format as a numbered list. "
         "If none found say 'No open questions found.'")
-     unresolved_questions=""
+     unresolved_questions_result=""
      for chunk in chunks:
-         unresolved_questions+=chain_extract_unresolved_questions.invoke({"text":chunk})
-     return unresolved_questions
+         unresolved_questions_result+=chain_extract_unresolved_questions.invoke({"text":chunk})
+         time.sleep(4)
+     return unresolved_questions_result
 
      
     

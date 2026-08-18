@@ -1,4 +1,3 @@
-from langchain_mistralai import ChatMistralAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_groq import ChatGroq
@@ -8,7 +7,9 @@ from dotenv import load_dotenv
 load_dotenv()
 import os 
 def getllm():
-    return ChatMistralAI(model="mistral-small-latest",temperature=0.2)
+    return ChatGroq(model="llama-3.1-8b-instant", temperature=0.2).with_retry(
+        stop_after_attempt=3, wait_exponential_jitter=True
+    )
 def getllm2():
     return ChatGroq(model="openai/gpt-oss-20b", temperature=0.2).with_retry(
         stop_after_attempt=3,

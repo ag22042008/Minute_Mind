@@ -3,7 +3,6 @@
 #decisions taken ,questions asked in meetings
 from tokenize import String
 
-from langchain_mistralai import ChatMistralAI
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -11,8 +10,12 @@ from langchain_core.runnables import RunnablePassthrough,RunnableLambda
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
+
 def getllm():
-   return ChatMistralAI(model="mistral-large-latest",mistral_api_key=os.getenv("MISTRAL_API_KEY"),temperature=0.2)
+    return ChatGroq(model="llama-3.1-8b-instant", temperature=0.2).with_retry(
+        stop_after_attempt=3, wait_exponential_jitter=True
+    )
+    
 def getllm2():
     return ChatGroq(model="openai/gpt-oss-20b", temperature=0.2).with_retry(
         stop_after_attempt=3,

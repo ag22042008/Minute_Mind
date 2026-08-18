@@ -152,29 +152,61 @@ def download_youtube_audio(url: str) -> str:
 
 
 def convert_to_wav(input_path: str) -> str:
-    """Convert any other video type (mp4, mp3) to wav format using pydub.
-    Resamples to 16kHz mono — the format Whisper expects."""
+    """Convert any video/audio file to 16kHz mono WAV using ffmpeg subprocess.
+    Streams through disk — never loads the full file into Python memory.
+    Far more RAM-efficient than pydub for large files."""
     output_path = os.path.splitext(input_path)[0] + "_converted.wav"
-    audio = AudioSegment.from_file(input_path)  # pydub auto-detects format
-    audio = audio.set_channels(1).set_frame_rate(16000)  # 16kHz mono
-    audio.export(output_path, format="wav")
+    import subprocess
+    result = subprocess.run(
+        [
+            "/usr/bin/ffmpeg", "-y",
+            "-i", input_path,
+            "-ar", "16000",   # 16 kHz sample rate (Whisper-optimal)
+            "-ac", "1",       # mono
+            "-vn",            # no video stream
+            output_path,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"ffmpeg conversion failed: {result.stderr[-500:]}")
     return output_path
 
 
-# Chunking: Whisper can't process very large files, so we split into 12-minute
-# segments. Time is measured in milliseconds by pydub.
 def chunk_audio(wav_path: str, chunk_minutes: int = 12) -> list:
-    audio = AudioSegment.from_wav(wav_path)  # load the full WAV
-    chunk_ms = chunk_minutes * 60 * 1000
-    chunks = []
+    """Split a WAV file into chunks using ffmpeg segment muxer.
+    Writes each chunk directly to disk — never loads the whole file into RAM."""
+    import subprocess
+    chunk_ms = chunk_minutes * 60  # ffmpeg segment_time is in seconds
+    base = os.path.splitext(wav_path)[0]
+    pattern = f"{base}_chunk_%03d.wav"
 
-    for i, start in enumerate(range(0, len(audio), chunk_ms)):
-        chunk = audio[start:start + chunk_ms]
-        chunk_path = f"{wav_path}_chunk_{i}.wav"
-        chunk.export(chunk_path, format="wav")
-        chunks.append(chunk_path)
+    result = subprocess.run(
+        [
+            "/usr/bin/ffmpeg", "-y",
+            "-i", wav_path,
+            "-f", "segment",
+            "-segment_time", str(chunk_ms),
+            "-c", "copy",
+            pattern,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"ffmpeg chunking failed: {result.stderr[-500:]}")
 
-    return chunks  # outside the loop — returns ALL chunks, not just the first
+    # Collect all written chunk files in order
+    chunks = sorted(
+        f for f in (
+            os.path.join(os.path.dirname(wav_path), fn)
+            for fn in os.listdir(os.path.dirname(wav_path) or ".")
+        )
+        if os.path.basename(f).startswith(os.path.basename(base) + "_chunk_")
+        and f.endswith(".wav")
+    )
+    return chunks
 
 
 def process_input(source: str) -> list:

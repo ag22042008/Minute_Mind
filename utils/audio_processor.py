@@ -186,39 +186,53 @@ def convert_to_wav(input_path: str) -> str:
 
 
 def chunk_audio(input_path: str, chunk_minutes: int = 10) -> list:
-    """Split the audio into MP3 chunks using ffmpeg segment muxer.
-    MP3 is heavily compressed, ensuring chunks are incredibly small (≈5MB for 10m)
-    and perfectly formatted, entirely avoiding Groq's 25MB limit and 500 header errors."""
+    """Split the audio into MP3 chunks using discrete ffmpeg seeks (-ss and -t).
+    This fixes the major bug where ffmpeg's '-f segment' muxer omits headers on
+    later chunks, causing Groq APIs to throw 500 errors due to unreadable files."""
+    import math
     chunk_secs = chunk_minutes * 60
     base = os.path.splitext(input_path)[0]
-    pattern = f"{base}_chunk_%03d.mp3"
-
-    result = subprocess.run(
+    
+    # 1. Get the total duration in seconds safely using ffprobe
+    probe = subprocess.run(
         [
-            "ffmpeg", "-y",
-            "-i", input_path,
-            "-f", "segment",
-            "-segment_time", str(chunk_secs),
-            "-c:a", "libmp3lame",   # Encode to robust MP3
-            "-b:a", "64k",          # 64kbps is plenty for clear speech transcription
-            "-ar", "16000",         # 16kHz sample rate optimal for Whisper
-            "-ac", "1",             # mono
-            pattern,
+            "ffprobe", "-v", "error", 
+            "-show_entries", "format=duration", 
+            "-of", "default=noprint_wrappers=1:nokey=1", 
+            input_path
         ],
-        capture_output=True,
-        text=True,
-        env=_SUBPROCESS_ENV,
+        capture_output=True, text=True, env=_SUBPROCESS_ENV
     )
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg chunking failed: {result.stderr[-500:]}")
+    if probe.returncode != 0:
+        raise RuntimeError(f"ffprobe failed to get duration: {probe.stderr}")
+    
+    total_duration = float(probe.stdout.strip())
+    total_chunks = math.ceil(total_duration / chunk_secs)
+    chunks = []
+    
+    # 2. Extract each chunk individually to ensure a flawless, independent 100% compliant MP3 header
+    for i in range(total_chunks):
+        start_time = i * chunk_secs
+        out_file = f"{base}_chunk_{i:03d}.mp3"
+        
+        res = subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-ss", str(start_time),  # Seek to start
+                "-t", str(chunk_secs),   # Take exactly this much duration
+                "-i", input_path,
+                "-c:a", "libmp3lame",    # Proper fresh encode per chunk
+                "-b:a", "64k",
+                "-ar", "16000",
+                "-ac", "1",
+                out_file
+            ],
+            capture_output=True, text=True, env=_SUBPROCESS_ENV
+        )
+        if res.returncode != 0:
+            raise RuntimeError(f"ffmpeg chunk extraction failed on chunk {i}: {res.stderr[-500:]}")
+        chunks.append(out_file)
 
-    chunk_dir = os.path.dirname(input_path) or "."
-    base_name = os.path.basename(base)
-    chunks = sorted(
-        os.path.join(chunk_dir, fn)
-        for fn in os.listdir(chunk_dir)
-        if fn.startswith(base_name + "_chunk_") and fn.endswith(".mp3")
-    )
     return chunks
 
 

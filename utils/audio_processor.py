@@ -68,6 +68,11 @@ import os
 import tempfile
 import streamlit as st
 
+# Explicitly set ffmpeg/ffprobe paths so pydub finds them on Streamlit Cloud,
+# where PATH may not include /usr/bin by default.
+AudioSegment.converter = "/usr/bin/ffmpeg"
+AudioSegment.ffprobe   = "/usr/bin/ffprobe"
+
 DOWNLOAD_DIR = 'downloades'
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 

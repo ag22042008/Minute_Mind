@@ -70,11 +70,20 @@ import subprocess
 import tempfile
 import streamlit as st
 
-# Locate ffmpeg/ffprobe dynamically — path varies across cloud environments.
-_FFMPEG  = shutil.which("ffmpeg")  or "/usr/bin/ffmpeg"
-_FFPROBE = shutil.which("ffprobe") or "/usr/bin/ffprobe"
-AudioSegment.converter = _FFMPEG
-AudioSegment.ffprobe   = _FFPROBE
+# Build an enriched PATH so subprocess can always find ffmpeg regardless of
+# where Streamlit Cloud has installed it.
+_EXTRA_PATHS = [
+    "/usr/bin",
+    "/usr/local/bin",
+    "/bin",
+    "/usr/local/ffmpeg/bin",
+]
+_ENV_PATH = ":".join(_EXTRA_PATHS + [os.environ.get("PATH", "")])
+_SUBPROCESS_ENV = {**os.environ, "PATH": _ENV_PATH}
+
+# Let pydub use the plain command name — the subprocess env above handles finding it.
+AudioSegment.converter = shutil.which("ffmpeg",  path=_ENV_PATH) or "ffmpeg"
+AudioSegment.ffprobe   = shutil.which("ffprobe", path=_ENV_PATH) or "ffprobe"
 
 DOWNLOAD_DIR = 'downloades'
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -160,7 +169,7 @@ def convert_to_wav(input_path: str) -> str:
     output_path = os.path.splitext(input_path)[0] + "_converted.wav"
     result = subprocess.run(
         [
-            _FFMPEG, "-y",
+            "ffmpeg", "-y",
             "-i", input_path,
             "-ar", "16000",
             "-ac", "1",
@@ -169,6 +178,7 @@ def convert_to_wav(input_path: str) -> str:
         ],
         capture_output=True,
         text=True,
+        env=_SUBPROCESS_ENV,
     )
     if result.returncode != 0:
         raise RuntimeError(f"ffmpeg conversion failed: {result.stderr[-500:]}")
@@ -184,7 +194,7 @@ def chunk_audio(wav_path: str, chunk_minutes: int = 12) -> list:
 
     result = subprocess.run(
         [
-            _FFMPEG, "-y",
+            "ffmpeg", "-y",
             "-i", wav_path,
             "-f", "segment",
             "-segment_time", str(chunk_secs),
@@ -193,6 +203,7 @@ def chunk_audio(wav_path: str, chunk_minutes: int = 12) -> list:
         ],
         capture_output=True,
         text=True,
+        env=_SUBPROCESS_ENV,
     )
     if result.returncode != 0:
         raise RuntimeError(f"ffmpeg chunking failed: {result.stderr[-500:]}")

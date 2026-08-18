@@ -65,13 +65,16 @@ import yt_dlp
 # pyrefly: ignore [missing-import]
 from pydub import AudioSegment
 import os
+import shutil
+import subprocess
 import tempfile
 import streamlit as st
 
-# Explicitly set ffmpeg/ffprobe paths so pydub finds them on Streamlit Cloud,
-# where PATH may not include /usr/bin by default.
-AudioSegment.converter = "/usr/bin/ffmpeg"
-AudioSegment.ffprobe   = "/usr/bin/ffprobe"
+# Locate ffmpeg/ffprobe dynamically — path varies across cloud environments.
+_FFMPEG  = shutil.which("ffmpeg")  or "/usr/bin/ffmpeg"
+_FFPROBE = shutil.which("ffprobe") or "/usr/bin/ffprobe"
+AudioSegment.converter = _FFMPEG
+AudioSegment.ffprobe   = _FFPROBE
 
 DOWNLOAD_DIR = 'downloades'
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -153,17 +156,15 @@ def download_youtube_audio(url: str) -> str:
 
 def convert_to_wav(input_path: str) -> str:
     """Convert any video/audio file to 16kHz mono WAV using ffmpeg subprocess.
-    Streams through disk — never loads the full file into Python memory.
-    Far more RAM-efficient than pydub for large files."""
+    Streams through disk — never loads the full file into Python memory."""
     output_path = os.path.splitext(input_path)[0] + "_converted.wav"
-    import subprocess
     result = subprocess.run(
         [
-            "/usr/bin/ffmpeg", "-y",
+            _FFMPEG, "-y",
             "-i", input_path,
-            "-ar", "16000",   # 16 kHz sample rate (Whisper-optimal)
-            "-ac", "1",       # mono
-            "-vn",            # no video stream
+            "-ar", "16000",
+            "-ac", "1",
+            "-vn",
             output_path,
         ],
         capture_output=True,
@@ -177,17 +178,16 @@ def convert_to_wav(input_path: str) -> str:
 def chunk_audio(wav_path: str, chunk_minutes: int = 12) -> list:
     """Split a WAV file into chunks using ffmpeg segment muxer.
     Writes each chunk directly to disk — never loads the whole file into RAM."""
-    import subprocess
-    chunk_ms = chunk_minutes * 60  # ffmpeg segment_time is in seconds
+    chunk_secs = chunk_minutes * 60
     base = os.path.splitext(wav_path)[0]
     pattern = f"{base}_chunk_%03d.wav"
 
     result = subprocess.run(
         [
-            "/usr/bin/ffmpeg", "-y",
+            _FFMPEG, "-y",
             "-i", wav_path,
             "-f", "segment",
-            "-segment_time", str(chunk_ms),
+            "-segment_time", str(chunk_secs),
             "-c", "copy",
             pattern,
         ],
@@ -197,14 +197,12 @@ def chunk_audio(wav_path: str, chunk_minutes: int = 12) -> list:
     if result.returncode != 0:
         raise RuntimeError(f"ffmpeg chunking failed: {result.stderr[-500:]}")
 
-    # Collect all written chunk files in order
+    chunk_dir = os.path.dirname(wav_path) or "."
+    base_name = os.path.basename(base)
     chunks = sorted(
-        f for f in (
-            os.path.join(os.path.dirname(wav_path), fn)
-            for fn in os.listdir(os.path.dirname(wav_path) or ".")
-        )
-        if os.path.basename(f).startswith(os.path.basename(base) + "_chunk_")
-        and f.endswith(".wav")
+        os.path.join(chunk_dir, fn)
+        for fn in os.listdir(chunk_dir)
+        if fn.startswith(base_name + "_chunk_") and fn.endswith(".wav")
     )
     return chunks
 

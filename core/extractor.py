@@ -33,7 +33,7 @@ groq_rate_limiter = InMemoryRateLimiter(
 # Gemini free tier (gemini-2.5-flash) is roughly 10 RPM / 250k TPM depending
 # on your account — conservative pacing here, tune if you know your actual cap.
 gemini_rate_limiter = InMemoryRateLimiter(
-    requests_per_second=0.15,
+    requests_per_second=0.35,
     check_every_n_seconds=0.1,
     max_bucket_size=1,
 )
@@ -60,7 +60,7 @@ def getllm2():
 
 def getllm3():
     return ChatGoogleGenerativeAI(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         temperature=0.2,
         rate_limiter=gemini_rate_limiter,
     ).with_retry(stop_after_attempt=3, wait_exponential_jitter=True)

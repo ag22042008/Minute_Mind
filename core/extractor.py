@@ -67,7 +67,7 @@ def getllm3():
 
 
 def splitter_text():
-    return RecursiveCharacterTextSplitter(chunk_size=20000, chunk_overlap=500)
+    return RecursiveCharacterTextSplitter(chunk_size=50000, chunk_overlap=1000)
 
 
 # --- Combined extraction chain -------------------------------------------
@@ -169,7 +169,7 @@ def _extract_all(transcript: str) -> dict:
         raw_results.extend(
             chain.batch(
                 [{"text": chunk} for chunk in group_chunks],
-                config={"max_concurrency": 2},
+                config={"max_concurrency": 4},
             )
         )
 

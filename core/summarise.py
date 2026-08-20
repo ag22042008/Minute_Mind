@@ -20,7 +20,7 @@ def getllm_groq():
     return ChatGroq(model="openai/gpt-oss-120b", temperature=0.2)
 
 def getllm_gemini():
-    return ChatGoogleGenerativeAI(model="gemini-3.5-flash", temperature=0.2).with_retry(
+    return ChatGoogleGenerativeAI(model="gemini-3.1-flash", temperature=0.2).with_retry(
         stop_after_attempt=3, wait_exponential_jitter=True
     )
 

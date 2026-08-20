@@ -26,7 +26,7 @@ def getllm_gemini():
 
 def get_resilient_llm():
     # Primary: Gemini (higher limits), Fallbacks: Mistral, then Groq
-    return getllm_gemini().with_fallbacks([getllm_groq(),getllm_mistral()])
+    return getllm_gemini().with_fallbacks([getllm_mistral()])
 
 
 def split_transcript(transcript:str)->list:

@@ -26,7 +26,7 @@ def getllm_gemini():
 
 def get_resilient_llm():
     # Primary: Gemini (higher limits), Fallbacks: Mistral, then Groq
-    return getllm_groq().with_fallbacks([getllm_gemini(),getllm_mistral()])
+    return getllm_gemini().with_fallbacks([getllm_groq(),getllm_mistral()])
 
 
 def split_transcript(transcript:str)->list:
@@ -60,7 +60,7 @@ def summarize(transcript:str)->str:
     combined_chain = combined_prompt | llm | StrOutputParser()
 
     # Recursive reduce: keep summarizing chunks until we have one final chunk that fits in the context window
-    combined_chunks = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200).split_text(combined)
+    combined_chunks = RecursiveCharacterTextSplitter(chunk_size=15000, chunk_overlap=2000).split_text(combined)
     
     while len(combined_chunks) > 1:
         reduced_summaries = []

@@ -52,7 +52,7 @@ def getllm2():
     # failover to Mistral/Gemini instead, which is faster than retrying Groq
     # itself against a quota that won't reset for hours.
     return ChatGroq(
-        model="llama-3.1-8b-instant",
+        model="openai/gpt-oss-120b",
         temperature=0.2,
         rate_limiter=groq_rate_limiter,
     )
@@ -60,7 +60,7 @@ def getllm2():
 
 def getllm3():
     return ChatGoogleGenerativeAI(
-        model="gemini-3.5-flash",
+        model="gemini-3.1-flash",
         temperature=0.2,
         rate_limiter=gemini_rate_limiter,
     ).with_retry(stop_after_attempt=3, wait_exponential_jitter=True)

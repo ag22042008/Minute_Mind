@@ -132,7 +132,7 @@ from langchain_core.runnables import RunnablePassthrough,RunnableLambda
 from core.vectore_store import load_vector_store,build_vector_store,get_retriever,embedding_model
 
 def get_llm():
-    return ChatMistralAI(
+    return ChatGroq(
         model="openai/gpt-oss-120b",
         groq_api_key=os.getenv("GROQ_API_KEY"),
         temperature=0.25,

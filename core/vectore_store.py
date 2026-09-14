@@ -1,6 +1,6 @@
 import os 
 from langchain_chroma import Chroma
-from langchain_mistralai import MistralAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 model="mistral-embed"
@@ -10,7 +10,7 @@ CHROMA_DIR="vector_db"
 COLLECTION_NAME="meeting_transcript"
 # creating the vector store
 def embedding_model():
-    return MistralAIEmbeddings(model=model)
+    return GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
 def build_vector_store(transcript:str)->Chroma:
     print("Building Vector Store")
     splitter=RecursiveCharacterTextSplitter(

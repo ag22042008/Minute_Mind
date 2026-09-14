@@ -10,7 +10,7 @@ CHROMA_DIR="vector_db"
 COLLECTION_NAME="meeting_transcript"
 # creating the vector store
 def embedding_model():
-    return GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+    return GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 def build_vector_store(transcript:str)->Chroma:
     print("Building Vector Store")
     splitter=RecursiveCharacterTextSplitter(
